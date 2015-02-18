@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<meta charset="utf-8">
+<head>
+<script src="http://d3js.org/d3.v3.min.js"></script>
+  <style type="text/css">
+    rect {
+        fill:teal;
+        fill-opacity:.8;
+    }
+  </style>
+</head>
+<body>
+  <div>
+    <label for="slider-time" 
+         style="display: inline-block; width: 240px; text-align: right">
+    </label>
+    <label>Time</label> 1995 <input type="range" name="points" min="1995" max="2012" step="1" value="0" id="slider-time"> 2012
+  </div>
+
+  <div>
+    <label for="encode" 
+         style="display: inline-block; width: 240px; text-align: right">
+    </label>
+    <strong>Encoded bars by:</strong>
+    <label>Population</label><input id="encode" type="radio" name="Population" value="Population" onclick="radio_pop()"></input>
+    <label>GDP</label><input id="encode" type="radio" name="GDP" value="GDP" onclick="radio_gdp()"></input>
+  </div>
+
+  <div>
+    <label for="cont" 
+         style="display: inline-block; width: 240px; text-align: right">
+    </label>
+    <strong>Filter by:</strong>
+    <label>Americas</label><input id="cont" type="checkbox" name="Americas" value="Americas" title="Americas" onchange="change_filter()"></input>
+    <label>Africa</label><input id="cont" type="checkbox" name="Africa" value="Africa" title="Africa" onchange="change_filter()"></input>
+    <label>Asia</label><input id="cont" type="checkbox" name="Asia" value="Asia" title="Asia" onchange="change_filter()"></input>
+    <label>Europe</label><input id="cont" type="checkbox" name="Europe" value="Europe" title="Europe" onchange="change_filter()"></input>
+    <label>Oceania</label><input id="cont" type="checkbox" name="Oceania" value="Oceania" title="Oceania" onchange="change_filter()"></input>
+  </div>
+    
+  <div>
+    <label for="agg" 
+         style="display: inline-block; width: 240px; text-align: right">
+    </label>
+    <strong>Aggregation:</strong>
+    <label>None</label><input id="agg" type="radio" name="None" value="None" onclick="radio_none()"></input>
+    <label>by Continent</label><input id="agg" type="radio" name="by Continent" value="by Continent" onclick="radio_continent()"></input>
+  </div>
+
+  <div>
+    <label for="sort" 
+         style="display: inline-block; width: 240px; text-align: right">
+    </label>
+    <strong>Sort by:</strong>
+    <label>Name</label><input id="sort" type="radio" name="Name" value="Name" onclick=""></input>
+    <label>Population</label><input id="sort" type="radio" name="Population" value="Population" onclick=""></input>
+    <label>GDP</label><input id="sort" type="radio" name="GDP" value="GDP" onclick=""></input>
+  </div>
+  <script type="text/javascript">
+ 
+    var margin = {top: 50, bottom: 10, left:300, right: 40};
+ 
+ 
+    var json_data;
+    var new_data;
+    var filter_data;
+    var variable = "gdp"
+    d3.json("data/countries_1995_2012.json", function(data) {
+        var test_data = [];
+            json_data = data;
+        for (var i=0; i<json_data.length; ++i){
+            test_data.push({"name":json_data[i].name, "continent":json_data[i].continent, "gdp":json_data[i].years[0].gdp, "life_expectancy": json_data[i].years[0].life_expectancy, "population": json_data[i].years[0].population, "year":json_data[i].years[0].year})
+        }
+        json_data = test_data;
+
+        new_data = create_nested(json_data)
+
+        draw_chart(json_data);
+
+        d3.select("#slider-time").on("input",function(){
+                console.log(data)
+                update_year(this.value,data);
+        })
+
+    });
+
+    function create_nested(data){
+        var nested_rows = d3.nest()
+            .key(function(d) { return d.continent; })
+            .rollup(function(d) { 
+            return {"name": d[0].continent,"continent": d[0].continent, "gdp": d3.sum(d, function(g) {return g.gdp; }),"life_expectancy": d3.mean(d, function(g) {return g.life_expectancy; }),"population": d3.sum(d, function(g) {return g.population; }), "year":d[0].year};
+            }).entries(data);
+
+        var return_data = [nested_rows[0].values, nested_rows[1].values, nested_rows[2].values, nested_rows[3].values ,nested_rows[4].values];
+        return return_data;
+    }
+
+    function draw_chart(data){
+
+        var width = 700+data.length*10 - margin.left - margin.right;
+        var height = 100+data.length*10 - margin.top - margin.bottom;
+
+        var xScale = d3.scale.linear().range([0, width]);
+        var yScale = d3.scale.ordinal().rangeBands([0, height]);
+     
+        var svg = d3.select("body").append("svg")
+                    .attr("width", width+margin.left+margin.right)
+                    .attr("height", height+margin.top+margin.bottom);
+
+        var g = svg.append("g")
+            .attr("transform", "translate("+margin.left+","+margin.top+")");
+        var max = d3.max(data, function(d) { return d[variable]; } );
+        var min = 0;
+
+        xScale.domain([min, max]);
+        yScale.domain(data.map(function(d) { return d["name"]; }));
+ 
+        var groups = g.append("g")
+                    .selectAll("text")
+                    .data(data)
+                  .enter()
+                    .append("g");
+        //colors = d3.scale.category20()
+        var bars = groups
+                    .append("rect")
+                    .attr("fill","green")
+                    .attr("width", function(d) { return xScale(d[variable]); })
+                    .attr("height", height/(data.length+1))
+                    .attr("x", xScale(min))
+                    .attr("y", function(d) { return yScale(d["name"]); })
+
+        /*
+        var left_width = 120;
+        groups.selectAll("text")
+            .data(data.map(function(d){console.log(d.name); return d.name;}))
+            .enter()
+            .append("text")
+            .attr("x", -left_width)
+            .attr("y",function(d){ return yScale(d) + yScale.rangeBand()/2; }  )
+            .style("font-size","10.5px")
+            .text(String)
+        */  
+    }
+
+    function update_year(year,data){
+        var yr = year - 1995;
+        d3.select("#slider-time").property("value", year);
+        var this_data = [];
+        for (var i=0; i<data.length; ++i){
+            this_data.push({"name":data[i].name, "continent":data[i].continent, "gdp":data[i].years[yr].gdp, "life_expectancy": data[i].years[yr].life_expectancy, "population": data[i].years[yr].population, "year":data[i].years[yr].year})
+        }
+        json_data = this_data;
+        var flag = 0;
+        change_filter();
+        if (filter_data.length !=0) {
+            flag = 2;
+            this_data = filter_data;
+        }
+        d3.selectAll("input").each(function(d) {
+            if(d3.select(this).attr("type") == "radio" && d3.select(this).node().checked) {
+                if (d3.select(this).attr("name") == "by Continent" ){
+                    new_data = create_nested(json_data);
+                    flag = 1;
+                }
+                else{
+                    json_data = this_data;
+                    if (filter_data.length !=0) json_data = filter_data;
+                }
+            }
+        });   
+
+        d3.selectAll("svg").remove();
+        
+        if (flag == 0) draw_chart(json_data);  
+        else if (flag == 2) draw_chart(this_data);  
+        else draw_chart(new_data)
+    }   
+
+    function aggregate_filter(){
+        d3.selectAll("input").each(function(d) {
+            if(d3.select(this).attr("type") == "radio" && d3.select(this).node().checked) {
+                if (d3.select(this).attr("name") == "by Continent" ){                     
+                    d3.select('svg').remove();
+                    //new_data = create_nested(json_data);
+                    draw_chart(new_data);
+                }
+                else{                   
+                    d3.select('svg').remove();
+                    draw_chart(json_data);
+                }
+            }
+        })
+    }
+
+    function radio_none(){
+        d3.selectAll("input")[0][8].checked = true;
+        d3.selectAll("input")[0][9].checked = false;
+        aggregate_filter();
+    }
+
+    function radio_continent(){
+        d3.selectAll("input")[0][9].checked = true;
+        d3.selectAll("input")[0][8].checked = false;
+        aggregate_filter();
+    }
+
+    function radio_pop(){
+        d3.selectAll("input")[0][1].checked = true;
+        d3.selectAll("input")[0][2].checked = false;
+        d3.select("svg").remove();
+        variable = "population";
+        draw_chart(json_data);
+    }
+
+    function radio_gdp(){
+        d3.selectAll("input")[0][2].checked = true;
+        d3.selectAll("input")[0][1].checked = false;
+        d3.select("svg").remove();
+        variable = "gdp";
+        draw_chart(json_data);
+    }
+
+          // function when a checkbox is checked
+    function change_filter(){
+        var continents = [];
+        var read_data = json_data;
+        filter_data = [];
+        d3.selectAll("input").each(function(d) {
+            if(d3.select(this).attr("type") == "radio" && d3.select(this).node().checked) {
+                if (d3.select(this).attr("name") == "by Continent"){
+                    read_data = create_nested(json_data);                  
+                }
+            }
+        })
+
+        d3.selectAll("input").each(function(d) {
+            if(d3.select(this).attr("type") == "checkbox" && d3.select(this).node().checked) {
+                continents.push(d3.select(this).attr("name"));         
+            }
+        });
+          
+        // filter data
+        if (continents.length != 0){
+            filter_data = read_data.filter(function(d) {
+                if (continents.indexOf(d["continent"]) != -1){
+                  return true;
+                }
+            })
+        }
+        else{
+            filter_data = read_data;
+        }
+        d3.select('svg').remove();
+        draw_chart(filter_data);
+    }
+    
+  </script>
+</body>
+</html>
