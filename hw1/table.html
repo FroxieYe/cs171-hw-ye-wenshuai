@@ -3,7 +3,30 @@
 <head>
 </head>
 <meta charset="utf-8">
+   <style type="text/css">
+  h1 {
+    text-align: center;
+    font-size: 30px;
+    font-family: "Verdana", sans-serif;
+    }
 
+  caption {
+    color: #0000CC;
+    font-size: 12px;
+    font-family: "Verdana", sans-serif;
+    font-weight: bold;
+    border: 1px solid black;
+    }
+
+  table, td {
+    text-align: center;
+    font-size: 14px;
+    width: 500px;
+    border: 1px solid black;
+    border-collapse: collapse;
+    }
+
+  </style>
   <body>
   <div>
     <label>Time Update</label> 1995 <input type="range" name="points" min="1995" max="2012" step="1" value="0" id="slider-time"> 2012
@@ -35,6 +58,7 @@
       // read the data and draw the 1st table
 
       d3.json("data/countries_1995_2012.json",function(error,data){
+
           var test_data = [];
               json_data = data;
           for (var i=0; i<json_data.length; ++i){
@@ -143,6 +167,7 @@
                })
               .on("mouseout", function(d, i){
                   d3.select(this).style("background-color", "#ffffff");
+                  zebra();
           });
 
 
@@ -164,6 +189,17 @@
                   return formatter(d);  
                }
             })
+
+            zebra();
+      }
+
+      function zebra() {
+          d3.select("body").selectAll("tr")
+          .style("background-color", function(d, i) {
+            if (i%2 === 1) {return "#e3e3e3";}
+            else {return "#ffffff";}
+           })
+         //ratecolor();
       }
 
       // function when a checkbox is checked

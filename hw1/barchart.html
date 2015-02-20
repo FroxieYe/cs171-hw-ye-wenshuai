@@ -5,7 +5,6 @@
 <script src="http://d3js.org/d3.v3.min.js"></script>
   <style type="text/css">
     rect {
-        fill:teal;
         fill-opacity:.8;
     }
   </style>
@@ -23,8 +22,8 @@
          style="display: inline-block; width: 240px; text-align: right">
     </label>
     <strong>Encoded bars by:</strong>
-    <label>Population</label><input id="encode" type="radio" name="Population" value="Population" onclick="radio_pop()"></input>
-    <label>GDP</label><input id="encode" type="radio" name="GDP" value="GDP" onclick="radio_gdp()"></input>
+    <label>Population</label><input id="encode" type="radio" name="Population_en" value="Population_en" onchange="radio_pop()"></input>
+    <label>GDP</label><input id="encode" type="radio" name="GDP_en" value="GDP_en" onchange="radio_gdp()"></input>
   </div>
 
   <div>
@@ -32,11 +31,11 @@
          style="display: inline-block; width: 240px; text-align: right">
     </label>
     <strong>Filter by:</strong>
-    <label>Americas</label><input id="cont" type="checkbox" name="Americas" value="Americas" title="Americas" onchange="change_filter()"></input>
-    <label>Africa</label><input id="cont" type="checkbox" name="Africa" value="Africa" title="Africa" onchange="change_filter()"></input>
-    <label>Asia</label><input id="cont" type="checkbox" name="Asia" value="Asia" title="Asia" onchange="change_filter()"></input>
-    <label>Europe</label><input id="cont" type="checkbox" name="Europe" value="Europe" title="Europe" onchange="change_filter()"></input>
-    <label>Oceania</label><input id="cont" type="checkbox" name="Oceania" value="Oceania" title="Oceania" onchange="change_filter()"></input>
+    <label>Americas</label><input id="cont" type="checkbox" name="Americas" value="Americas" onclick="change_filter()"></input>
+    <label>Africa</label><input id="cont" type="checkbox" name="Africa" value="Africa" onclick="change_filter()"></input>
+    <label>Asia</label><input id="cont" type="checkbox" name="Asia" value="Asia" onclick="change_filter()"></input>
+    <label>Europe</label><input id="cont" type="checkbox" name="Europe" value="Europe" onclick="change_filter()"></input>
+    <label>Oceania</label><input id="cont" type="checkbox" name="Oceania" value="Oceania" onclick="change_filter()"></input>
   </div>
     
   <div>
@@ -44,8 +43,8 @@
          style="display: inline-block; width: 240px; text-align: right">
     </label>
     <strong>Aggregation:</strong>
-    <label>None</label><input id="agg" type="radio" name="None" value="None" onclick="radio_none()"></input>
-    <label>by Continent</label><input id="agg" type="radio" name="by Continent" value="by Continent" onclick="radio_continent()"></input>
+    <label>None</label><input id="agg" type="radio" name="None" value="None" onchange="radio_none()"></input>
+    <label>by Continent</label><input id="agg" type="radio" name="by Continent" value="by Continent" onchange="radio_continent()"></input>
   </div>
 
   <div>
@@ -53,21 +52,30 @@
          style="display: inline-block; width: 240px; text-align: right">
     </label>
     <strong>Sort by:</strong>
-    <label>Name</label><input id="sort" type="radio" name="Name" value="Name" onclick="sorting_bars('name')"></input>
-    <label>Population</label><input id="sort" type="radio" name="Population" value="Population" onclick="sorting_bars('population')"></input>
-    <label>GDP</label><input id="sort" type="radio" name="GDP" value="GDP" onclick="sorting_bars('gdp')"></input>
+    <label>Name</label><input id="sort" type="radio" name="name" value="Name" onchange="sorting_bars('name')"></input>
+    <label>Population</label><input id="sort" type="radio" name="population" value="Population" onchange="sorting_bars('population')"></input>
+    <label>GDP</label><input id="sort" type="radio" name="gdp" value="GDP" onchange="sorting_bars('gdp')"></input>
   </div>
   <script type="text/javascript">
  
     var margin = {top: 10, bottom: 5, left:300, right: 40};
  
- 
-    var json_data;
-    var new_data;
-    var filter_data;
-    var isDescending;
-    var variable = "gdp"
+    // json_data is the unfiltered data. new_data is used for nested ones, and filter data is used for filtered data.
+    var json_data, new_data, filter_data;
+    var variable = "gdp";
     d3.json("data/countries_1995_2012.json", function(data) {
+        // This function gets back the maximum year.
+        console.log(d3.max(data[0].years, function(d) { return d.year; } ))
+        // This function produces the minimum year.
+        console.log(d3.min(data[0].years, function(d) {return d.year}))
+        // Initialize the aggregate button to None
+        for (var i=0;i<d3.selectAll("#agg")[0].length;++i){    
+            if (d3.selectAll("#agg")[0][i].name=="None") d3.selectAll("#agg")[0][i].checked = true;
+        }
+        // Initialize the encoded button to GDP
+        for (var i=0;i<d3.selectAll("#encode")[0].length;++i){    
+            if (d3.selectAll("#encode")[0][i].name=="GDP_en") d3.selectAll("#encode")[0][i].checked = true;
+        }
         var test_data = [];
             json_data = data;
         for (var i=0; i<json_data.length; ++i){
@@ -75,17 +83,16 @@
         }
         json_data = test_data;
         filter_data = json_data
-        new_data = create_nested(json_data)
 
         draw_chart(json_data);
 
         d3.select("#slider-time").on("input",function(){
-                //console.log(data)
                 update_year(this.value,data);
         })
 
     });
 
+    // Create aggregates.
     function create_nested(data){
         var nested_rows = d3.nest()
             .key(function(d) { return d.continent; })
@@ -101,6 +108,8 @@
     }
 
     var width, height, xScale, yScale, svg;
+
+    // Draw Bar Charts.
     function draw_chart(data){
         width = 700+data.length*10 - margin.left - margin.right;
         height = 100+data.length*10 - margin.top - margin.bottom;
@@ -118,25 +127,23 @@
         var min = 0;
 
         xScale.domain([min, max]);
-        //yScale.domain(data.map(function(d) { return d["name"]; }));
         yScale.domain(d3.range(data.length+1))
         var groups = g.append("g")
                     .selectAll("text")
                     .data(data)
                   .enter()
                     .append("g");
-        //colors = d3.scale.category20()
-        //console.log(data)
+        // Draw Bars.
         var bars = groups
                     .append("rect")
-                    .attr("fill","green")
+                    .attr("fill","#2970FF")
                     .attr("width", function(d) { return xScale(d[variable]); })
                     .attr("height", height/(data.length+3))
                     .attr("x", xScale(min))
                     .attr("y", function(d,i) {return yScale(i); })
 
-        console.log(svg.selectAll("text"))
-        var left_width = -150;
+        // Add text labels
+        var left_width = -130;
         g.selectAll("text")
             .data(data)
             .enter()
@@ -147,7 +154,11 @@
             .attr("font-size","10.5px")
             .attr("fill", "black");
 
-        //console.log(svg.selectAll("text"))
+        // The bar will be sorted according to the radio button.
+        for (var i=0;i<d3.selectAll("#sort")[0].length;++i){
+            if (d3.selectAll("#sort")[0][i].checked == true) 
+                sorting_bars(d3.selectAll("#sort")[0][i].name)
+        }
     }
 
     function update_year(year,data){
@@ -183,28 +194,37 @@
     }
 
     function radio_none(){
-        d3.selectAll("input")[0][8].checked = true;
-        d3.selectAll("input")[0][9].checked = false;
+        //console.log(d3.selectAll("#agg"))
+        for (var i=0;i<d3.selectAll("#agg")[0].length;++i){    
+            if (d3.selectAll("#agg")[0][i].name=="None") d3.selectAll("#agg")[0][i].checked = true;
+            else d3.selectAll("#agg")[0][i].checked = false
+        }
         aggregate_filter();
     }
 
     function radio_continent(){
-        d3.selectAll("input")[0][9].checked = true;
-        d3.selectAll("input")[0][8].checked = false;
+        for (var i=0;i<d3.selectAll("#agg")[0].length;++i){
+            if (d3.selectAll("#agg")[0][i].name=="by Continent") d3.selectAll("#agg")[0][i].checked = true;
+            else d3.selectAll("#agg")[0][i].checked = false
+        }
         aggregate_filter();
     }
 
     function radio_pop(){
-        d3.selectAll("input")[0][1].checked = true;
-        d3.selectAll("input")[0][2].checked = false;
+        for (var i=0;i<d3.selectAll("#encode")[0].length;++i){
+            if (d3.selectAll("#encode")[0][i].name=="Population_en") d3.selectAll("#encode")[0][i].checked = true;
+            else d3.selectAll("#encode")[0][i].checked = false
+        }
         d3.select("svg").remove();
         variable = "population";
         draw_chart(json_data);
     }
 
     function radio_gdp(){
-        d3.selectAll("input")[0][2].checked = true;
-        d3.selectAll("input")[0][1].checked = false;
+        for (var i=0;i<d3.selectAll("#encode")[0].length;++i){
+            if (d3.selectAll("#encode")[0][i].name=="GDP_en") d3.selectAll("#encode")[0][i].checked = true;
+            else d3.selectAll("#encode")[0][i].checked = false
+        }
         d3.select("svg").remove();
         variable = "gdp";
         draw_chart(json_data);
@@ -213,7 +233,6 @@
           // function when a checkbox is checked
     function change_filter(){
         var read_data = json_data;
-        //filter_data = [];
 
         filter_data = filtering_data(read_data);
 
@@ -221,27 +240,16 @@
         draw_chart(filter_data);
     }
 
-    function sorting_bars(variable){
-        if (variable == "gdp"){
-            d3.selectAll("input")[0][12].checked = true;
-            d3.selectAll("input")[0][11].checked = false;
-            d3.selectAll("input")[0][10].checked = false;
-        }
-        else if (variable == "population"){
-            d3.selectAll("input")[0][12].checked = false;
-            d3.selectAll("input")[0][11].checked = true;
-            d3.selectAll("input")[0][10].checked = false;
-        }
+    function sorting_bars(sort_var){
 
-        else{
-            d3.selectAll("input")[0][12].checked = false;
-            d3.selectAll("input")[0][11].checked = false;
-            d3.selectAll("input")[0][10].checked = true;
+        for (var i=0;i<d3.selectAll("#sort")[0].length;++i){
+            if (d3.selectAll("#sort")[0][i].name==sort_var) d3.selectAll("#sort")[0][i].checked = true;
+            else d3.selectAll("#sort")[0][i].checked = false
         }
 
         svg.selectAll("rect")
             .sort(function(a, b) {
-                return d3.descending(a[variable], b[variable]);
+                return d3.descending(a[sort_var], b[sort_var]);
         })
         .transition()
         .duration(1000)
@@ -251,7 +259,7 @@
 
         svg.selectAll("text")
             .sort(function(a, b) {    
-                return d3.descending(a[variable], b[variable]);
+                return d3.descending(a[sort_var], b[sort_var]);
             })
         .transition()
         .duration(1000)
@@ -259,10 +267,6 @@
         .attr("y", function (d, i) {
         return yScale(i+1);
         });
-
-
-
-
     }
 
 
