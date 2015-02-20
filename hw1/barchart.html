@@ -53,18 +53,19 @@
          style="display: inline-block; width: 240px; text-align: right">
     </label>
     <strong>Sort by:</strong>
-    <label>Name</label><input id="sort" type="radio" name="Name" value="Name" onclick=""></input>
-    <label>Population</label><input id="sort" type="radio" name="Population" value="Population" onclick=""></input>
-    <label>GDP</label><input id="sort" type="radio" name="GDP" value="GDP" onclick=""></input>
+    <label>Name</label><input id="sort" type="radio" name="Name" value="Name" onclick="sorting_bars('name')"></input>
+    <label>Population</label><input id="sort" type="radio" name="Population" value="Population" onclick="sorting_bars('population')"></input>
+    <label>GDP</label><input id="sort" type="radio" name="GDP" value="GDP" onclick="sorting_bars('gdp')"></input>
   </div>
   <script type="text/javascript">
  
-    var margin = {top: 50, bottom: 10, left:300, right: 40};
+    var margin = {top: 10, bottom: 5, left:300, right: 40};
  
  
     var json_data;
     var new_data;
     var filter_data;
+    var isDescending;
     var variable = "gdp"
     d3.json("data/countries_1995_2012.json", function(data) {
         var test_data = [];
@@ -73,13 +74,13 @@
             test_data.push({"name":json_data[i].name, "continent":json_data[i].continent, "gdp":json_data[i].years[0].gdp, "life_expectancy": json_data[i].years[0].life_expectancy, "population": json_data[i].years[0].population, "year":json_data[i].years[0].year})
         }
         json_data = test_data;
-
+        filter_data = json_data
         new_data = create_nested(json_data)
 
         draw_chart(json_data);
 
         d3.select("#slider-time").on("input",function(){
-                console.log(data)
+                //console.log(data)
                 update_year(this.value,data);
         })
 
@@ -92,19 +93,22 @@
             return {"name": d[0].continent,"continent": d[0].continent, "gdp": d3.sum(d, function(g) {return g.gdp; }),"life_expectancy": d3.mean(d, function(g) {return g.life_expectancy; }),"population": d3.sum(d, function(g) {return g.population; }), "year":d[0].year};
             }).entries(data);
 
-        var return_data = [nested_rows[0].values, nested_rows[1].values, nested_rows[2].values, nested_rows[3].values ,nested_rows[4].values];
+        return_data = [];
+        for (var i = 0; i<nested_rows.length;++i){       
+            return_data.push(nested_rows[i].values);    
+        }
         return return_data;
     }
 
+    var width, height, xScale, yScale, svg;
     function draw_chart(data){
+        width = 700+data.length*10 - margin.left - margin.right;
+        height = 100+data.length*10 - margin.top - margin.bottom;
 
-        var width = 700+data.length*10 - margin.left - margin.right;
-        var height = 100+data.length*10 - margin.top - margin.bottom;
-
-        var xScale = d3.scale.linear().range([0, width]);
-        var yScale = d3.scale.ordinal().rangeBands([0, height]);
+        xScale = d3.scale.linear().range([0, width]);
+        yScale = d3.scale.ordinal().rangeRoundBands([0, height],.8, 0);
      
-        var svg = d3.select("body").append("svg")
+        svg = d3.select("body").append("svg")
                     .attr("width", width+margin.left+margin.right)
                     .attr("height", height+margin.top+margin.bottom);
 
@@ -114,33 +118,36 @@
         var min = 0;
 
         xScale.domain([min, max]);
-        yScale.domain(data.map(function(d) { return d["name"]; }));
- 
+        //yScale.domain(data.map(function(d) { return d["name"]; }));
+        yScale.domain(d3.range(data.length+1))
         var groups = g.append("g")
                     .selectAll("text")
                     .data(data)
                   .enter()
                     .append("g");
         //colors = d3.scale.category20()
+        //console.log(data)
         var bars = groups
                     .append("rect")
                     .attr("fill","green")
                     .attr("width", function(d) { return xScale(d[variable]); })
-                    .attr("height", height/(data.length+1))
+                    .attr("height", height/(data.length+3))
                     .attr("x", xScale(min))
-                    .attr("y", function(d) { return yScale(d["name"]); })
+                    .attr("y", function(d,i) {return yScale(i); })
 
-        /*
-        var left_width = 120;
-        groups.selectAll("text")
-            .data(data.map(function(d){console.log(d.name); return d.name;}))
+        console.log(svg.selectAll("text"))
+        var left_width = -150;
+        g.selectAll("text")
+            .data(data)
             .enter()
             .append("text")
-            .attr("x", -left_width)
-            .attr("y",function(d){ return yScale(d) + yScale.rangeBand()/2; }  )
-            .style("font-size","10.5px")
-            .text(String)
-        */  
+            .text(function(d) { return d.name; }) 
+            .attr("x", left_width)
+            .attr("y",function(d,i){return yScale(i+1); }  )
+            .attr("font-size","10.5px")
+            .attr("fill", "black");
+
+        //console.log(svg.selectAll("text"))
     }
 
     function update_year(year,data){
@@ -151,30 +158,11 @@
             this_data.push({"name":data[i].name, "continent":data[i].continent, "gdp":data[i].years[yr].gdp, "life_expectancy": data[i].years[yr].life_expectancy, "population": data[i].years[yr].population, "year":data[i].years[yr].year})
         }
         json_data = this_data;
-        var flag = 0;
-        change_filter();
-        if (filter_data.length !=0) {
-            flag = 2;
-            this_data = filter_data;
-        }
-        d3.selectAll("input").each(function(d) {
-            if(d3.select(this).attr("type") == "radio" && d3.select(this).node().checked) {
-                if (d3.select(this).attr("name") == "by Continent" ){
-                    new_data = create_nested(json_data);
-                    flag = 1;
-                }
-                else{
-                    json_data = this_data;
-                    if (filter_data.length !=0) json_data = filter_data;
-                }
-            }
-        });   
-
-        d3.selectAll("svg").remove();
         
-        if (flag == 0) draw_chart(json_data);  
-        else if (flag == 2) draw_chart(this_data);  
-        else draw_chart(new_data)
+        var cur_data;
+        cur_data = filtering_data(json_data);
+        d3.selectAll("svg").remove();
+        draw_chart(cur_data);
     }   
 
     function aggregate_filter(){
@@ -182,12 +170,13 @@
             if(d3.select(this).attr("type") == "radio" && d3.select(this).node().checked) {
                 if (d3.select(this).attr("name") == "by Continent" ){                     
                     d3.select('svg').remove();
-                    //new_data = create_nested(json_data);
+                    new_data = create_nested(filter_data);
                     draw_chart(new_data);
                 }
                 else{                   
                     d3.select('svg').remove();
-                    draw_chart(json_data);
+                    filter_data = filtering_data(json_data)
+                    draw_chart(filter_data);
                 }
             }
         })
@@ -223,13 +212,68 @@
 
           // function when a checkbox is checked
     function change_filter(){
-        var continents = [];
         var read_data = json_data;
-        filter_data = [];
+        //filter_data = [];
+
+        filter_data = filtering_data(read_data);
+
+        d3.select('svg').remove();
+        draw_chart(filter_data);
+    }
+
+    function sorting_bars(variable){
+        if (variable == "gdp"){
+            d3.selectAll("input")[0][12].checked = true;
+            d3.selectAll("input")[0][11].checked = false;
+            d3.selectAll("input")[0][10].checked = false;
+        }
+        else if (variable == "population"){
+            d3.selectAll("input")[0][12].checked = false;
+            d3.selectAll("input")[0][11].checked = true;
+            d3.selectAll("input")[0][10].checked = false;
+        }
+
+        else{
+            d3.selectAll("input")[0][12].checked = false;
+            d3.selectAll("input")[0][11].checked = false;
+            d3.selectAll("input")[0][10].checked = true;
+        }
+
+        svg.selectAll("rect")
+            .sort(function(a, b) {
+                return d3.descending(a[variable], b[variable]);
+        })
+        .transition()
+        .duration(1000)
+        .attr("y", function (d, i) {
+        return yScale(i);
+        });
+
+        svg.selectAll("text")
+            .sort(function(a, b) {    
+                return d3.descending(a[variable], b[variable]);
+            })
+        .transition()
+        .duration(1000)
+        .text(function(d) { return d.name; }) 
+        .attr("y", function (d, i) {
+        return yScale(i+1);
+        });
+
+
+
+
+    }
+
+
+
+    function filtering_data(data){
+        var continents = [];
+        var cur_data;
         d3.selectAll("input").each(function(d) {
             if(d3.select(this).attr("type") == "radio" && d3.select(this).node().checked) {
                 if (d3.select(this).attr("name") == "by Continent"){
-                    read_data = create_nested(json_data);                  
+                    data = create_nested(json_data);                  
                 }
             }
         })
@@ -239,20 +283,14 @@
                 continents.push(d3.select(this).attr("name"));         
             }
         });
-          
-        // filter data
+
         if (continents.length != 0){
-            filter_data = read_data.filter(function(d) {
-                if (continents.indexOf(d["continent"]) != -1){
-                  return true;
-                }
+            cur_data = data.filter(function(d) {
+                if (continents.indexOf(d["continent"]) != -1) return true;
             })
         }
-        else{
-            filter_data = read_data;
-        }
-        d3.select('svg').remove();
-        draw_chart(filter_data);
+        else cur_data = data;
+        return cur_data;
     }
     
   </script>
