@@ -92,7 +92,7 @@
 
     });
 
-    // Create aggregates.
+    // Create aggregatition data.
     function create_nested(data){
         var nested_rows = d3.nest()
             .key(function(d) { return d.continent; })
@@ -161,6 +161,7 @@
         }
     }
 
+    // Update the bar chart when the year changes.
     function update_year(year,data){
         var yr = year - 1995;
         d3.select("#slider-time").property("value", year);
@@ -176,6 +177,7 @@
         draw_chart(cur_data);
     }   
 
+    // Performs aggregation.
     function aggregate_filter(){
         d3.selectAll("input").each(function(d) {
             if(d3.select(this).attr("type") == "radio" && d3.select(this).node().checked) {
@@ -193,8 +195,8 @@
         })
     }
 
+    // This will be called when "None" is clicked.
     function radio_none(){
-        //console.log(d3.selectAll("#agg"))
         for (var i=0;i<d3.selectAll("#agg")[0].length;++i){    
             if (d3.selectAll("#agg")[0][i].name=="None") d3.selectAll("#agg")[0][i].checked = true;
             else d3.selectAll("#agg")[0][i].checked = false
@@ -202,6 +204,7 @@
         aggregate_filter();
     }
 
+    // This will be called when "by Continent" is clicked.
     function radio_continent(){
         for (var i=0;i<d3.selectAll("#agg")[0].length;++i){
             if (d3.selectAll("#agg")[0][i].name=="by Continent") d3.selectAll("#agg")[0][i].checked = true;
@@ -210,6 +213,7 @@
         aggregate_filter();
     }
 
+    // This will be called when "encoded by population" is clicked.
     function radio_pop(){
         for (var i=0;i<d3.selectAll("#encode")[0].length;++i){
             if (d3.selectAll("#encode")[0][i].name=="Population_en") d3.selectAll("#encode")[0][i].checked = true;
@@ -220,6 +224,7 @@
         draw_chart(json_data);
     }
 
+    // This will be called when "encoded by gdp" is clicked.
     function radio_gdp(){
         for (var i=0;i<d3.selectAll("#encode")[0].length;++i){
             if (d3.selectAll("#encode")[0][i].name=="GDP_en") d3.selectAll("#encode")[0][i].checked = true;
@@ -230,7 +235,7 @@
         draw_chart(json_data);
     }
 
-          // function when a checkbox is checked
+    // filter function when a checkbox is checked
     function change_filter(){
         var read_data = json_data;
 
@@ -240,6 +245,7 @@
         draw_chart(filter_data);
     }
 
+    // Sorting function to sort bars.
     function sorting_bars(sort_var){
 
         for (var i=0;i<d3.selectAll("#sort")[0].length;++i){
@@ -247,6 +253,7 @@
             else d3.selectAll("#sort")[0][i].checked = false
         }
 
+        // Sort bars.
         svg.selectAll("rect")
             .sort(function(a, b) {
                 return d3.descending(a[sort_var], b[sort_var]);
@@ -257,6 +264,7 @@
         return yScale(i);
         });
 
+        // Sort associated labels.
         svg.selectAll("text")
             .sort(function(a, b) {    
                 return d3.descending(a[sort_var], b[sort_var]);
@@ -270,15 +278,13 @@
     }
 
 
-
+    // filter the data based on the buttons checked / clicked.
     function filtering_data(data){
         var continents = [];
         var cur_data;
         d3.selectAll("input").each(function(d) {
             if(d3.select(this).attr("type") == "radio" && d3.select(this).node().checked) {
-                if (d3.select(this).attr("name") == "by Continent"){
-                    data = create_nested(json_data);                  
-                }
+                if (d3.select(this).attr("name") == "by Continent") data = create_nested(json_data); 
             }
         })
 

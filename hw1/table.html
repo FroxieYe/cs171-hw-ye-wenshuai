@@ -45,8 +45,8 @@
     
   <div>
     <strong>Aggregation:</strong>
-    <label>None</label><input type="radio" name="None" value="None" onclick="radio_none()"></input>
-    <label>by Continent</label><input type="radio" name="by Continent" value="by Continent" onclick="radio_continent()"></input>
+    <label>None</label><input id="agg" type="radio" name="None" value="None" onchange="radio_none()"></input>
+    <label>by Continent</label><input id="agg" type="radio" name="by Continent" value="by Continent" onchange="radio_continent()"></input>
   </div>
 
   <script>
@@ -88,7 +88,7 @@
     
       });
       */
-
+      // Update the table when the year changes.
       function update_year(year,data){
           var yr = year - 1995;
           d3.select("#slider-time").property("value", year);
@@ -104,6 +104,7 @@
           table_drawing(cur_data);
       }   
 
+       // Create aggregatition data.
       function create_nested(data){
           var nested_rows = d3.nest()
               .key(function(d) { return d.continent; })
@@ -119,7 +120,7 @@
       }
 
 
-      // your function to draw the table
+      // function to draw the table
       function table_drawing(data){
 
           var table = d3.select("body").append("table");
@@ -129,11 +130,11 @@
 
               table.append("caption").html("World Countries Ranking");
           var desiredlist = ["name", "continent", "gdp", "life_expectancy", "population", "year"];  
-          //var desiredlist = ["continent","gdp","life_expectancy","name","population","year"]
-          //var life_expectancy = ["life_expectancy"];
+
           var isdescending = true;
           var prefix = d3.formatPrefix(1e9);
 
+          // Create the header of the table.
           thead.selectAll("th")
               .data(desiredlist)
           .enter()
@@ -145,6 +146,7 @@
 
               tbody.selectAll("tr").sort(function(a, b) {
 
+                // Sort by names when there are ties.
                 if (isdescending) {
                   if (d3.descending(a[header], b[header]) == 0){ return d3.descending(a['name'], b['name']);}
                   else{return d3.descending(a[header], b[header]);}
@@ -157,6 +159,7 @@
               });
           });
 
+          // Create zebra patterns.
           var rows = tbody.selectAll("tr")
               .data(data)
               .enter()
@@ -189,31 +192,28 @@
                   return formatter(d);  
                }
             })
-
             zebra();
       }
 
+      // create zebra pattern.
       function zebra() {
           d3.select("body").selectAll("tr")
           .style("background-color", function(d, i) {
             if (i%2 === 1) {return "#e3e3e3";}
             else {return "#ffffff";}
            })
-         //ratecolor();
       }
 
       // function when a checkbox is checked
       function change_filter(){
           var read_data = json_data;
-          //filter_data = [];
-
           filter_data = filtering_data(read_data);
 
           d3.select('table').remove();
           table_drawing(filter_data);
       }
 
-
+      // Performs aggregation.
       function aggregate_filter(){
           d3.selectAll("input").each(function(d) {
               if(d3.select(this).attr("type") == "radio" && d3.select(this).node().checked) {
@@ -231,26 +231,31 @@
           })
       }
 
+      // This will be called when "None" is clicked.
       function radio_none(){
-          d3.selectAll("input")[0][6].checked = true;
-          d3.selectAll("input")[0][7].checked = false;
+          for (var i=0;i<d3.selectAll("#agg")[0].length;++i){    
+              if (d3.selectAll("#agg")[0][i].name=="None") d3.selectAll("#agg")[0][i].checked = true;
+              else d3.selectAll("#agg")[0][i].checked = false
+          }
           aggregate_filter();
       }
 
+      // This will be called when "by Continent" is clicked.
       function radio_continent(){
-          d3.selectAll("input")[0][7].checked = true;
-          d3.selectAll("input")[0][6].checked = false;
+          for (var i=0;i<d3.selectAll("#agg")[0].length;++i){
+              if (d3.selectAll("#agg")[0][i].name=="by Continent") d3.selectAll("#agg")[0][i].checked = true;
+              else d3.selectAll("#agg")[0][i].checked = false
+          }
           aggregate_filter();
       }
 
+      // filter the data based on the buttons checked / clicked.
       function filtering_data(data){
         var continents = [];
         var cur_data;
         d3.selectAll("input").each(function(d) {
             if(d3.select(this).attr("type") == "radio" && d3.select(this).node().checked) {
-                if (d3.select(this).attr("name") == "by Continent"){
-                    data = create_nested(json_data);                  
-                }
+                if (d3.select(this).attr("name") == "by Continent") data = create_nested(json_data); 
             }
         })
 
