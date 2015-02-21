@@ -1,5 +1,6 @@
 * Wenshuai Ye \<wenshuaiye@g.harvard.edu\>
 * CS 171 Homework 1
+* Collaborator: Yuhao Zhu, Wenwan Yang
 
 ## 1. Improving the table presentation
 
