@@ -3,7 +3,8 @@
 <head>
 </head>
 <meta charset="utf-8">
-   <style type="text/css">
+  <title>Wenshuai Ye CS171 HW#1</title>
+  <style type="text/css">
   caption {
     font-size: 14px;
     font-family: "Verdana", sans-serif;
@@ -130,7 +131,7 @@
           // Create the header of the table.
           thead.selectAll("th")
               .data(desiredlist)
-          .enter()
+              .enter()
               .append("th")
               .text(function(d) { return d; })
               .on("click", function(header, i) {
