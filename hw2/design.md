@@ -19,6 +19,7 @@ As mentioned, there are three ways to find out this info. One way is to move the
 To accomplish this, I added a time slider for users to update the information. However, the transition was not clear enough and I didn't have sufficient time to improve it.
 
 ###Alternative Design
-
+![alt tag](design/design1.png)
+![alt tag](design/design2.png)
 
 
