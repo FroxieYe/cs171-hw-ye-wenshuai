@@ -7,7 +7,7 @@
 </title>
 <style>
   .link {
-    stroke: gray;
+    stroke: steelblue;
     stroke-width: .8px;
   }
 
@@ -63,6 +63,20 @@
 
 var json_data;
 var clicked = false;
+
+var margin = {top: 50, bottom: 10, left: 300, right: 40};
+var width = 1200 - margin.left - margin.right;
+var height = 1400 - margin.top - margin.bottom;
+
+var fill = d3.scale.category10();
+var continent = ["Americas","Africa","Asia","Europe","Oceania"];
+var color = ["3399CC","000066","99FF00","FF0066","FFFF00"]
+
+// create force for country-specific layout.
+var force = d3.layout.force()
+  .size([width, height-850])
+  .charge(-600)
+
 d3.json("data/countries_1995_2012.json", function(data) {
 
     /* Create country-specific drop-down menu.*/
@@ -76,10 +90,11 @@ d3.json("data/countries_1995_2012.json", function(data) {
     };
 
     var test_data = read_data(1995);
+    
 
     var alternate_data = {};
     for (var i=0;i<data.length;i++){
-      alternate_data[test_data[i].name]= {"cat":data[i]};
+      alternate_data[test_data[i].name]= {"cat":test_data[i]};
     }
     
     // draw the layout.
@@ -87,8 +102,10 @@ d3.json("data/countries_1995_2012.json", function(data) {
 
     // slider used to update data;
     d3.select("#slider-time").on("input",function(){
+        force.stop();
         var test_data = read_data(this.value);
         d3.selectAll("svg").remove();
+
         draw_graph(test_data, alternate_data);
     })
 
@@ -116,18 +133,12 @@ d3.json("data/countries_1995_2012.json", function(data) {
   });
 
   function draw_graph(data, alternate_data){
-      var margin = {top: 50, bottom: 10, left: 300, right: 40};
-      var width = 1200 - margin.left - margin.right;
-      var height = 1400 - margin.top - margin.bottom;
 
       var svg = d3.select("body").append("svg")
                   .attr("width", width)
                   .attr("height", height);
 
-      var fill = d3.scale.category10();
-
       var graph = {nodes: [], links: []};
-      var continent = ["Americas","Africa","Asia","Europe","Oceania"];
 
       // create a dictionary that group country info to continent.
       var cont_based = {}
@@ -183,13 +194,6 @@ d3.json("data/countries_1995_2012.json", function(data) {
         })
       })  
 
-      // create force for country-specific layout.
-      var force = d3.layout.force()
-        .size([width, height-850])
-        .charge(-600)
-
-      force.stop();
-
       // sort the nodes.
       function nodes_sort(svar){
         graph.nodes.sort(function(a,b){return d3.ascending(a.cat[svar],b.cat[svar])});
@@ -212,7 +216,6 @@ d3.json("data/countries_1995_2012.json", function(data) {
 
       // even line layout
       function line_even_layout() {
-
         force.stop();
         remove_garbage();
         d3.selectAll("line").attr("display","none");
@@ -225,7 +228,6 @@ d3.json("data/countries_1995_2012.json", function(data) {
 
       // scatter layout
       function scatter_layout() {
-
         force.stop();
         d3.selectAll("line").attr("display","none");
         
@@ -298,7 +300,6 @@ d3.json("data/countries_1995_2012.json", function(data) {
                     })
                 }
             }
-
           graph_update(node,link,500);
       }
 
@@ -312,7 +313,7 @@ d3.json("data/countries_1995_2012.json", function(data) {
             .attr("y2", function(d) { return d.source.y; });
 
         node.transition().duration(duration)
-            .attr("transform", function(d) { 
+            .attr("transform", function(d,i) {
               return "translate("+d.x+","+d.y+")";
             });
       }
@@ -342,21 +343,23 @@ d3.json("data/countries_1995_2012.json", function(data) {
                   .enter()
                     .append("g").attr("class", "node");
 
-      node.append("text")
-          .text(function(d) {return d.cat.name; }) 
-          .attr("x", 20)
-          .attr("font-family", "sans-serif")
-          .attr("font-size","10.5px")
 
-      var nodetxt = node.append("circle")
+
+      node.append("circle")
           .attr("r", 5)
           .attr("cx", function(d) { return d.x; })
           .attr("cy", function(d) { return d.y; })
           .style("fill", function(d) { 
             return fill(d.cat.continent); 
           });
-      
-      nodetxt.on("mouseover", function(d){   
+
+      node.append("text")
+          .text(function(d) {return d.cat.name; }) 
+          .attr("x", function(d) { return 20; })
+          .attr("font-family", "sans-serif")
+          .attr("font-size","10.5px")
+
+      node.on("mouseover", function(d){   
           var partners = [d.cat.name]; 
           d3.selectAll("line").style("stroke",function(e,i){
               if (d.cat.name == e.source.cat.name) {
@@ -376,16 +379,15 @@ d3.json("data/countries_1995_2012.json", function(data) {
             })
           })
           .on("mouseout", function(d, i){
-              console.log(clicked)
               if (!clicked){
-                d3.selectAll("line").style("stroke","gray")
+                d3.selectAll("line").style("stroke","steelblue")
                 .style("stroke-opacity",1)
                 d3.selectAll("text").attr("display","block");
               }
           });
       
       // anchor the line when clicking the country node.  
-      nodetxt.on("click", function(d){
+      node.on("click", function(d){
           if (clicked) clicked = false;
           else clicked = true;
           var partners = [d.cat.name]; 
@@ -406,8 +408,8 @@ d3.json("data/countries_1995_2012.json", function(data) {
       
       // Given a country, construct the info for trader partners.
       function construct_trade_list(d){
-          console.log(d)
           d.cat["export"] = 0
+      
           var partners = [d.cat]; 
           var temp = []
 
@@ -429,20 +431,27 @@ d3.json("data/countries_1995_2012.json", function(data) {
 
       // create individual layout.
       function create_individual_layout(d){
+          force.stop();
+          remove_garbage();
           var temp = construct_trade_list(d);
           var mx = d3.max(temp,function(e,i) {return e.cat.export;});
           var mn = d3.min(temp,function(e,i) {return e.cat.export;});
-          var circle_scale = d3.scale.linear().domain([mn, mx]).range([100, 550]);
+          var mxp = d3.max(temp,function(e,i) {return e.cat.population;});
+          var mnp = d3.min(temp,function(e,i) {return e.cat.population;});
+          var circle_scale = d3.scale.linear().domain([mnp, mxp]).range([100, 550]);
+          var line_scale = d3.scale.linear().domain([mn,mx]).range([1,10]);
           sublines = []
           for (var i=1;i<temp.length;i++) sublines.push({"source":temp[0], "target":temp[i]});
-          
+
           var subline = svg.selectAll(".subline")
               .data(sublines)
             .enter()
               .append("line")
               .attr("class", "subline")
-              .style("stroke","black");
-
+              .style("stroke","#999")
+              .style("stroke-width", function(d){
+                  return line_scale(d.target.cat.export);
+              })
 
           var subnode = svg.selectAll(".subnode")
               .data(temp)
@@ -452,24 +461,28 @@ d3.json("data/countries_1995_2012.json", function(data) {
               .attr("y",height/2);
 
           subnode.append("circle")
-          .attr("r", function(e,i) { return i==0 ?  Math.sqrt(circle_scale(mx)) : Math.sqrt(circle_scale(e.cat.export));})
-          .style("fill", function(e) { return fill(e.cat.continent);})
+          .attr("r", function(e,i) { return Math.sqrt(circle_scale(e.cat.population));})
+          .style("fill", function(e) { return color[continent.indexOf(e.cat.continent)];})
+          .style("stroke", "#fff")
+          .style("stroke-width",2)
+          .call(force.drag);
 
           subnode.append("text")
           .text(function(e) {return e.cat.name;}) 
           .attr("font-family", "sans-serif")
           .attr("font-size",function(e,i){ return (i==0) ? "13.5px" : "9.5px";})
           .attr("font-weight", function(e,i){ if (i==0) return "bold";})
-          .attr("y",function(e,i){ return (i == 0) ? 0 : 50;})
+          .attr("y",function(e,i){ return (i == 0) ? 0 : 35;})
           .attr("x",-15)
+
 
           var prefix = d3.formatPrefix(1e8);
           subnode.append("text")
-          .text(function(e,i) { if (i != 0) return d3.round(prefix.scale(e.cat.export),1) + prefix.symbol;}) 
+          .text(function(e,i) { if (i != 0) return "Volume: " + d3.round(prefix.scale(e.cat.export),1) + prefix.symbol;}) 
           .attr("font-family", "sans-serif")
           .attr("font-size","10.5px")
-          .attr("y", 60)
-          .attr("x",-15)
+          .attr("y", 45)
+          .attr("x",-15);
           
 
           temp[0].x = width/2;
@@ -487,6 +500,7 @@ d3.json("data/countries_1995_2012.json", function(data) {
             d3.selectAll(".link").attr("display","none");
             d3.selectAll(".node").attr("display","none");
           }
+
           force.nodes(temp)
             .start();
       }
