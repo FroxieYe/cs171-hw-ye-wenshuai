@@ -10,8 +10,8 @@ CS 171 HW#3
 
 - put your sketches in folder [designStudio/](designStudio/)
 ###Sketches
-![alt tag](designStudio/sketch1.jpg)
-![alt tag](designStudio/sketch2.jpg)
+![alt tag](designStudio/sketches1.jpg)
+![alt tag](designStudio/sketches2.jpg)
 
 - add any additional comments here
 Most of the comments can be found along with the sketches. In case that my handwriting is hard to read, I make a printed version below. The scenario we use is to compare the selected data votes of a certain period against overall averages.
